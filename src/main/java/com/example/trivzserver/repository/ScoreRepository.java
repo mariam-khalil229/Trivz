@@ -22,4 +22,6 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
         order by sum(s.points) desc
     """)
     List<LeaderboardEntry> getLeaderboard(@Param("roomId") Long roomId);
+
+    boolean existsByRoomIdAndPlayerIdAndQuestionId(Long roomId, Long playerId, Long questionId);
 }
