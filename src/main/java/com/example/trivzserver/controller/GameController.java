@@ -25,9 +25,4 @@ public class GameController {
     public GameQuestionResponse current(@PathVariable Long roomId) {
         return gameService.getCurrentQuestion(roomId);
     }
-
-    @PostMapping("/next")
-    public GameQuestionResponse next(@PathVariable Long roomId) {
-        return gameService.nextQuestion(roomId);
-    }
 }

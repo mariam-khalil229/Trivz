@@ -2,10 +2,13 @@ package com.example.trivzserver.controller;
 
 import com.example.trivzserver.dto.AuthRequest;
 import com.example.trivzserver.dto.AuthResponse;
+import com.example.trivzserver.dto.PlayerResponse;
 import com.example.trivzserver.entity.Player;
 import com.example.trivzserver.repository.PlayerRepository;
 import com.example.trivzserver.service.JwtService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,5 +46,16 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(new AuthResponse(token));
+    }
+
+    @GetMapping("/me")
+    public PlayerResponse me() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new RuntimeException("Not authenticated");
+        }
+        Player player = playerRepository.findByUsername(auth.getName())
+                .orElseThrow(() -> new RuntimeException("Player not found"));
+        return PlayerResponse.fromEntity(player);
     }
 }

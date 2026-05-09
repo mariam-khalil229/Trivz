@@ -2,13 +2,14 @@ package com.example.trivzserver.service;
 
 import com.example.trivzserver.entity.Player;
 import com.example.trivzserver.repository.PlayerRepository;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -24,6 +25,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         Player player = playerRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return new User(player.getUsername(), player.getPasswordHash(), Collections.emptyList());
+        String role = player.getRole() == null || player.getRole().isBlank() ? "USER" : player.getRole();
+        List<SimpleGrantedAuthority> auths = List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+
+        return new User(player.getUsername(), player.getPasswordHash(), auths);
     }
 }

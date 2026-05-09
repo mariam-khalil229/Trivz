@@ -18,7 +18,7 @@ public class Player {
     private String passwordHash;
 
     @Column
-    private String displayName;
+    private String role = "USER";
 
     @Column
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -26,51 +26,22 @@ public class Player {
     public Player() {
     }
 
-    public Player(Long id, String username, String passwordHash, String displayName, LocalDateTime createdAt) {
+    public Player(Long id, String username, String passwordHash, LocalDateTime createdAt) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
-        this.displayName = displayName;
         this.createdAt = createdAt;
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public String getUsername() { return username; }
+    public String getPasswordHash() { return passwordHash; }
+    public String getRole() { return role; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public void setId(Long id) { this.id = id; }
+    public void setUsername(String username) { this.username = username; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public void setRole(String role) { this.role = role; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

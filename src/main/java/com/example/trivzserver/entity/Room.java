@@ -24,17 +24,24 @@ public class Room {
     private String status;
 
     @Column
+    private Long hostPlayerId;
+
+    @Column
+    private String difficulty;
+
+    @Column
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public Room() {
     }
 
-    public Room(Long id, String code, String name, Integer maxPlayers, String status, LocalDateTime createdAt) {
+    public Room(Long id, String code, String name, Integer maxPlayers, String status, Long hostPlayerId, LocalDateTime createdAt) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.maxPlayers = maxPlayers;
         this.status = status;
+        this.hostPlayerId = hostPlayerId;
         this.createdAt = createdAt;
     }
 
@@ -56,6 +63,14 @@ public class Room {
 
     public String getStatus() {
         return status;
+    }
+
+    public Long getHostPlayerId() {
+        return hostPlayerId;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -80,6 +95,14 @@ public class Room {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public void setHostPlayerId(Long hostPlayerId) {
+        this.hostPlayerId = hostPlayerId;
+    }
+
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

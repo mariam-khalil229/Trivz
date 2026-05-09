@@ -1,5 +1,6 @@
 package com.example.trivzserver.service;
 
+import com.example.trivzserver.dto.RoomMemberResponse;
 import com.example.trivzserver.entity.Player;
 import com.example.trivzserver.entity.Room;
 import com.example.trivzserver.entity.RoomMember;
@@ -18,13 +19,16 @@ public class RoomMemberService {
     private final RoomRepository roomRepository;
     private final PlayerRepository playerRepository;
     private final RoomMemberRepository roomMemberRepository;
+    private final GameEventPublisher publisher;
 
     public RoomMemberService(RoomRepository roomRepository,
                              PlayerRepository playerRepository,
-                             RoomMemberRepository roomMemberRepository) {
+                             RoomMemberRepository roomMemberRepository,
+                             GameEventPublisher publisher) {
         this.roomRepository = roomRepository;
         this.playerRepository = playerRepository;
         this.roomMemberRepository = roomMemberRepository;
+        this.publisher = publisher;
     }
 
     public List<RoomMember> listMembers(Long roomId) {
@@ -36,8 +40,9 @@ public class RoomMemberService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
-        if (!"LOBBY".equalsIgnoreCase(room.getStatus())) {
-            throw new RuntimeException("Room is not joinable right now");
+        String s = room.getStatus();
+        if (!"LOBBY".equalsIgnoreCase(s) && !"IN_PROGRESS".equalsIgnoreCase(s)) {
+            throw new RuntimeException("Cannot join — this room has finished");
         }
 
         Player player = getCurrentPlayer();
@@ -52,7 +57,9 @@ public class RoomMemberService {
                     RoomMember member = new RoomMember();
                     member.setRoom(room);
                     member.setPlayer(player);
-                    return roomMemberRepository.save(member);
+                    RoomMember saved = roomMemberRepository.save(member);
+                    publisher.publishMember(roomId, "JOIN", toResponse(saved));
+                    return saved;
                 });
     }
 
@@ -62,7 +69,19 @@ public class RoomMemberService {
         RoomMember member = roomMemberRepository.findByRoomIdAndPlayerId(roomId, player.getId())
                 .orElseThrow(() -> new RuntimeException("Member not found"));
 
+        RoomMemberResponse snapshot = toResponse(member);
         roomMemberRepository.delete(member);
+        publisher.publishMember(roomId, "LEAVE", snapshot);
+    }
+
+    private RoomMemberResponse toResponse(RoomMember member) {
+        return new RoomMemberResponse(
+                member.getId(),
+                member.getRoom().getId(),
+                member.getPlayer().getId(),
+                member.getPlayer().getUsername(),
+                member.getJoinedAt()
+        );
     }
 
     private Player getCurrentPlayer() {

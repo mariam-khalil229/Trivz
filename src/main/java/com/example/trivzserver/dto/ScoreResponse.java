@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public class ScoreResponse {
     private Long id;
     private Long playerId;
+    private String playerUsername;
     private Long roomId;
     private Long questionId;
     private Boolean correct;
@@ -14,9 +15,11 @@ public class ScoreResponse {
     public ScoreResponse() {
     }
 
-    public ScoreResponse(Long id, Long playerId, Long roomId, Long questionId, Boolean correct, Integer points, LocalDateTime answeredAt) {
+    public ScoreResponse(Long id, Long playerId, String playerUsername, Long roomId, Long questionId,
+                         Boolean correct, Integer points, LocalDateTime answeredAt) {
         this.id = id;
         this.playerId = playerId;
+        this.playerUsername = playerUsername;
         this.roomId = roomId;
         this.questionId = questionId;
         this.correct = correct;
@@ -30,6 +33,10 @@ public class ScoreResponse {
 
     public Long getPlayerId() {
         return playerId;
+    }
+
+    public String getPlayerUsername() {
+        return playerUsername;
     }
 
     public Long getRoomId() {
@@ -58,6 +65,10 @@ public class ScoreResponse {
 
     public void setPlayerId(Long playerId) {
         this.playerId = playerId;
+    }
+
+    public void setPlayerUsername(String playerUsername) {
+        this.playerUsername = playerUsername;
     }
 
     public void setRoomId(Long roomId) {

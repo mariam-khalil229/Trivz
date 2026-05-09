@@ -24,6 +24,12 @@ public class RoomGame {
     @Column
     private LocalDateTime questionStartedAt;
 
+    @Column
+    private LocalDateTime deadlineAt;
+
+    @Column
+    private LocalDateTime revealUntil;
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -34,6 +40,8 @@ public class RoomGame {
     public Integer getCurrentQuestionIndex() { return currentQuestionIndex; }
     public LocalDateTime getStartedAt() { return startedAt; }
     public LocalDateTime getQuestionStartedAt() { return questionStartedAt; }
+    public LocalDateTime getDeadlineAt() { return deadlineAt; }
+    public LocalDateTime getRevealUntil() { return revealUntil; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setId(Long id) { this.id = id; }
@@ -41,5 +49,7 @@ public class RoomGame {
     public void setCurrentQuestionIndex(Integer currentQuestionIndex) { this.currentQuestionIndex = currentQuestionIndex; }
     public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
     public void setQuestionStartedAt(LocalDateTime questionStartedAt) { this.questionStartedAt = questionStartedAt; }
+    public void setDeadlineAt(LocalDateTime deadlineAt) { this.deadlineAt = deadlineAt; }
+    public void setRevealUntil(LocalDateTime revealUntil) { this.revealUntil = revealUntil; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

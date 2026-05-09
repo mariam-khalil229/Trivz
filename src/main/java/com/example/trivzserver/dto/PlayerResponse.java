@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public class PlayerResponse {
     private Long id;
     private String username;
-    private String displayName;
+    private String role;
     private LocalDateTime createdAt;
 
     public PlayerResponse() {}
@@ -16,7 +16,7 @@ public class PlayerResponse {
         PlayerResponse res = new PlayerResponse();
         res.setId(player.getId());
         res.setUsername(player.getUsername());
-        res.setDisplayName(player.getDisplayName());
+        res.setRole(player.getRole());
         res.setCreatedAt(player.getCreatedAt());
         return res;
     }
@@ -27,8 +27,8 @@ public class PlayerResponse {
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
-    public String getDisplayName() { return displayName; }
-    public void setDisplayName(String displayName) { this.displayName = displayName; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

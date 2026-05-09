@@ -6,10 +6,9 @@ public record GameQuestionResponse(
         Long roomId,
         Long questionId,
         String prompt,
-        String category,
         String difficulty,
-        Integer timeLimitSeconds,
         Integer index,
         Integer total,
-        LocalDateTime questionStartedAt
+        LocalDateTime questionStartedAt,
+        LocalDateTime roundDeadline
 ) {}

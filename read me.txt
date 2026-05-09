@@ -1,0 +1,197 @@
+Trivz — multiplayer trivia game (server + JavaFX client)
+==========================================================
+
+This single Maven project contains both the Spring Boot server (com.example.trivzserver)
+and the JavaFX client (com.example.trivzclient) so it can be opened, built and run
+together inside one IDE project.
+
+Required-tool checklist (every requirement on the brief is satisfied):
+
+  REST APIs / controllers ............ AuthController, PlayerController, RoomController,
+                                       RoomMemberController, QuestionController,
+                                       ScoreController, GameController
+  Spring Security .................... SecurityConfig + JwtAuthenticationFilter,
+                                       BCrypt password hashing, JWT bearer tokens
+  Synchronous / asynchronous / wait .. @EnableAsync on app, GameEventPublisher uses
+                                       @Async for non-blocking broadcasts;
+                                       client uses HttpClient.send() (sync) and
+                                       JavaFX Task<>/Thread (async) so the UI stays
+                                       responsive while waiting for server replies
+  WebSocket .......................... STOMP over WebSocket via WebSocketConfig
+                                       (/ws endpoint, /topic broker prefix);
+                                       events: question, tick, score, leaderboard,
+                                       status, members
+  Threads ............................ @Scheduled fixedRate=1s game timer
+                                       (GameTimerService), ReentrantLock for
+                                       single-tick guarantee, JavaFX background
+                                       threads via javafx.concurrent.Task and
+                                       Platform.runLater for UI updates
+  MySQL .............................. application.properties points at
+                                       jdbc:mysql://localhost:3306/trivz,
+                                       hibernate ddl-auto=update
+  Spring Data JPA .................... PlayerRepository, RoomRepository,
+                                       QuestionRepository, QuestionAnswerRepository,
+                                       ScoreRepository (with JPQL leaderboard
+                                       query), RoomMemberRepository, RoomGameRepository,
+                                       RoomGameQuestionRepository
+  JavaFX ............................. com.example.trivzclient.* with Login, Lobby,
+                                       Game, Podium screens; live updates via
+                                       Spring's WebSocketStompClient
+
+----------------------------------------------------------
+HOW TO RUN
+----------------------------------------------------------
+
+1) Make sure MySQL is running and a database named `trivz` exists (or change
+   spring.datasource.url in src/main/resources/application.properties).
+
+2) Set a real jwt.secret in application.properties (>= 32 chars). The default
+   value is just a placeholder.
+
+3) Start the server:
+       ./mvnw spring-boot:run
+   (or run TrivzApplication from your IDE)
+
+4) In a second terminal, start the JavaFX client:
+       ./mvnw javafx:run
+   (or run com.example.trivzclient.ClientApp from your IDE — make sure the
+   JavaFX SDK is on the module path; the javafx-maven-plugin handles this
+   automatically when launched via mvn).
+
+   Optional system properties to point the client at a remote server:
+       -Dtrivz.api=http://host:8080
+       -Dtrivz.ws=ws://host:8080/ws
+
+5) Register two users in the client (or open two client windows), create a
+   room, both join, click Start Game in either window. The /topic/room/{id}/...
+   broadcasts drive the live question/timer/score updates on every screen.
+
+----------------------------------------------------------
+PACKAGE LAYOUT
+----------------------------------------------------------
+
+com.example.trivzserver
+  config/    SecurityConfig, WebSocketConfig
+  controller AuthController, PlayerController, RoomController,
+             RoomMemberController, QuestionController, ScoreController,
+             GameController
+  dto        AuthRequest, AuthResponse, PlayerRequest, PlayerResponse,
+             RoomRequest, RoomResponse, RoomMemberResponse, JoinRoomRequest,
+             QuestionRequest, QuestionResponse, GameQuestionResponse,
+             StartGameRequest, SubmitAnswerRequest, ScoreResponse,
+             LeaderboardEntry
+  entity     Player, Room, Question, QuestionAnswer, Score, RoomMember,
+             RoomGame, RoomGameQuestion
+  repository (one per entity)
+  security   JwtAuthenticationFilter
+  service    AnswerService, JwtService, CustomUserDetailsService,
+             RoomMemberService, ScoreService, GameService,
+             GameEventPublisher, GameTimerService
+
+com.example.trivzclient
+  ClientApp           JavaFX Application entrypoint
+  ClientSession       in-memory token / username / current room
+  ApiClient           java.net.http.HttpClient REST helper
+  LiveClient          Spring WebSocketStompClient wrapper, marshals
+                      server pushes to JavaFX thread via Platform.runLater
+  screen/LoginScreen
+  screen/LobbyScreen
+  screen/GameScreen
+  screen/PodiumScreen
+
+----------------------------------------------------------
+REST API
+----------------------------------------------------------
+
+Public:
+  POST   /api/auth/login            { username, password }  -> { token }
+  POST   /api/players               { username, password, displayName }
+
+Authenticated (Bearer JWT):
+  GET    /api/players
+  GET    /api/players/{id}
+
+  GET    /api/questions
+  GET    /api/questions/{id}
+  POST   /api/questions
+  PUT    /api/questions/{id}
+  DELETE /api/questions/{id}
+
+  GET    /api/rooms
+  GET    /api/rooms/{id}
+  GET    /api/rooms/code/{code}
+  POST   /api/rooms                 { name, maxPlayers? }
+
+  GET    /api/rooms/{roomId}/members
+  POST   /api/rooms/{roomId}/join
+  POST   /api/rooms/{roomId}/leave
+
+  POST   /api/rooms/{roomId}/game/start    { questionCount? }
+  GET    /api/rooms/{roomId}/game/current
+  POST   /api/rooms/{roomId}/game/next
+
+  POST   /api/rooms/{roomId}/scores/submit { questionId, answerText, timeTakenSeconds }
+  GET    /api/rooms/{roomId}/scores/leaderboard
+
+The membership and scoring endpoints derive identity from the JWT — clients
+never send a playerId. The submit endpoint validates that the submitted
+questionId matches the room's current question (drawn from RoomGame /
+RoomGameQuestion), and rejects double-submission via
+ScoreRepository.existsByRoomIdAndPlayerIdAndQuestionId.
+
+----------------------------------------------------------
+WEBSOCKET (STOMP)
+----------------------------------------------------------
+
+Endpoint:    /ws  (also exposed with SockJS fallback)
+Broker:      /topic
+App prefix:  /app
+
+Topics published by the server:
+  /topic/room/{id}/question     full GameQuestionResponse on start + each next
+  /topic/room/{id}/tick         { remaining, index } every second per active room
+  /topic/room/{id}/score        ScoreResponse for each submission
+  /topic/room/{id}/leaderboard  current LeaderboardEntry list after each score
+  /topic/room/{id}/status       { status: "IN_PROGRESS" | "FINISHED" }
+  /topic/room/{id}/members      { event: "JOIN"|"LEAVE", member: RoomMemberResponse }
+
+Server-side flow:
+  GameService.startGame   -> publishes status=IN_PROGRESS + first question
+  ScoreService.submit     -> publishes score + new leaderboard
+  RoomMemberService.*     -> publishes member JOIN / LEAVE
+  GameTimerService (@Scheduled, 1s tick)
+                          -> publishes tick; when remaining hits 0 it advances
+                             to the next question (publishing /question) or
+                             flips room.status to FINISHED and publishes the
+                             final leaderboard
+
+----------------------------------------------------------
+SECURITY MODEL
+----------------------------------------------------------
+
+  Stateless, JWT bearer.
+  /api/auth/**, POST /api/players, /ws/** are open.
+  All other endpoints require a valid JWT.
+  Identity flows JWT subject -> CustomUserDetailsService.loadUserByUsername
+                              -> SecurityContextHolder.getAuthentication().getName()
+                              -> PlayerRepository.findByUsername(...)
+  This is what the room-membership and score services use to decide
+  "who is acting" — clients can no longer impersonate another player.
+
+----------------------------------------------------------
+WHAT WAS LEFT FROM THE PRIOR PLAN, AND HOW IT MAPS TO THIS REPO
+----------------------------------------------------------
+
+  Auth + BCrypt + JWT ......... done (AuthController + SecurityConfig +
+                                JwtService + JwtAuthenticationFilter)
+  Game flow state ............. done (RoomGame, RoomGameQuestion, GameService,
+                                GameController)
+  Per-room scoring + leaderboard done (ScoreService, ScoreRepository JPQL)
+  WebSockets for live updates . done (WebSocketConfig, GameEventPublisher,
+                                GameTimerService)
+  Threads / async / wait ...... done (@EnableAsync, @Scheduled, @Async pub,
+                                ReentrantLock, JavaFX Task<> + Platform.runLater)
+  JavaFX client ............... done (com.example.trivzclient package)
+
+A clean test suite (controller + integration) is the obvious next step; the
+existing TrivzApplicationTests only verifies the Spring context loads.
